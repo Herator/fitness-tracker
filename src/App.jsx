@@ -358,26 +358,39 @@ export default function FitnessTracker() {
   const [history, setHistory] = useState(SAMPLE_HISTORY);
   const [prs, setPrs] = useState(SAMPLE_PRs);
   const [activeWorkout, setActiveWorkout] = useState(null);
-  const [elapsed, setElapsed] = useState(0);
+  const [tick, setTick] = useState(0);
+  const [lastSetDoneAt, setLastSetDoneAt] = useState(null);
   const [showExPicker, setShowExPicker] = useState(false);
   const timerRef = useRef(null);
 
+  const workoutStartTime = activeWorkout ? activeWorkout.startTime : null;
   useEffect(() => {
-    if (activeWorkout) { timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000); }
-    else { clearInterval(timerRef.current); setElapsed(0); }
+    if (workoutStartTime) {
+      timerRef.current = setInterval(() => setTick(t => t + 1), 1000);
+    } else {
+      clearInterval(timerRef.current);
+      setLastSetDoneAt(null);
+      setTick(0);
+    }
     return () => clearInterval(timerRef.current);
-  }, [activeWorkout]);
+  }, [workoutStartTime]);
+
+  const elapsed = activeWorkout ? Math.floor((Date.now() - activeWorkout.startTime) / 1000) : 0;
+  const restElapsed = lastSetDoneAt ? Math.floor((Date.now() - lastSetDoneAt) / 1000) : null;
 
   const startWorkout = (dayKey) => {
     const plan = WORKOUT_PLAN[dayKey];
     if (!plan || plan.isRest || plan.isClimbing) return;
     const exs = plan.exercises.map(e => ({ ...e, sets: Array(e.sets).fill(null).map((_, i) => ({ id: i, weight: "", reps: "", done: false, prev: history.flatMap(h => h.exercises).find(he => he.name === e.name)?.sets[i] || null })) }));
-    setActiveWorkout({ dayKey, name: plan.name, exercises: exs, date: new Date().toISOString().slice(0, 10) });
+    setActiveWorkout({ dayKey, name: plan.name, exercises: exs, date: new Date().toISOString().slice(0, 10), startTime: Date.now() });
     setTab("workout");
   };
 
   const updateSet = (exIdx, setIdx, field, val) => setActiveWorkout(w => ({ ...w, exercises: w.exercises.map((e, ei) => ei !== exIdx ? e : { ...e, sets: e.sets.map((s, si) => si !== setIdx ? s : { ...s, [field]: val }) }) }));
-  const toggleSet = (exIdx, setIdx) => setActiveWorkout(w => ({ ...w, exercises: w.exercises.map((e, ei) => ei !== exIdx ? e : { ...e, sets: e.sets.map((s, si) => si !== setIdx ? s : { ...s, done: !s.done }) }) }));
+  const toggleSet = (exIdx, setIdx) => {
+    if (!activeWorkout.exercises[exIdx].sets[setIdx].done) setLastSetDoneAt(Date.now());
+    setActiveWorkout(w => ({ ...w, exercises: w.exercises.map((e, ei) => ei !== exIdx ? e : { ...e, sets: e.sets.map((s, si) => si !== setIdx ? s : { ...s, done: !s.done }) }) }));
+  };
   const addSet = (exIdx) => setActiveWorkout(w => ({ ...w, exercises: w.exercises.map((e, ei) => ei !== exIdx ? e : { ...e, sets: [...e.sets, { id: e.sets.length, weight: "", reps: "", done: false, prev: null }] }) }));
   const addExercise = (name) => { setActiveWorkout(w => ({ ...w, exercises: [...w.exercises, { name, muscle: "Other", sets: [{ id: 0, weight: "", reps: "", done: false, prev: null }] }] })); setShowExPicker(false); };
 
@@ -515,7 +528,10 @@ export default function FitnessTracker() {
             <div style={{ paddingTop: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <div><div style={{ fontFamily: FONT, fontSize: 26, fontWeight: 800, textTransform: "uppercase", letterSpacing: 1 }}>{activeWorkout.name}</div><div style={{ fontSize: 13, color: COLORS.muted }}>{formatDate(activeWorkout.date)}</div></div>
-                <div style={{ fontFamily: FONT, fontSize: 28, fontWeight: 700, color: COLORS.accent }}>{formatTime(elapsed)}</div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontFamily: FONT, fontSize: 28, fontWeight: 700, color: COLORS.accent }}>{formatTime(elapsed)}</div>
+                  {restElapsed !== null && <div style={{ fontFamily: FONT, fontSize: 13, color: COLORS.green, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 2 }}>Rest {formatTime(restElapsed)}</div>}
+                </div>
               </div>
               <div style={{ ...s.card, borderLeft: `3px solid ${COLORS.green}`, marginBottom: 16 }}>
                 <div style={{ fontFamily: FONT, fontSize: 15, fontWeight: 700, color: COLORS.green, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Warmup</div>
