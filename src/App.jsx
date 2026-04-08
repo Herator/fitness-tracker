@@ -755,4 +755,3 @@ export default function FitnessTracker() {
     </div>
   );
 }
-  
