@@ -528,7 +528,7 @@ export default function FitnessTracker() {
                     {prs[ex.name] && <div style={{ textAlign: "right" }}><div style={{ fontSize: 10, color: COLORS.muted, textTransform: "uppercase" }}>PR</div><div style={{ fontFamily: FONT, fontSize: 15, color: COLORS.amber, fontWeight: 700 }}>{prs[ex.name].weight > 0 ? `${prs[ex.name].weight}kg` : "BW"} × {prs[ex.name].reps}</div></div>}
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 80px 80px 36px", gap: 6, padding: "0 10px 6px" }}>
-                    {["#", "Prev", "kg", "Reps", ""].map((h, i) => <div key={i} style={{ fontSize: 10, color: COLORS.muted, textTransform: "uppercase" }}>{h}</div>)}
+                    {["#", "Your best of all time", "kg", "Reps", ""].map((h, i) => <div key={i} style={{ fontSize: 10, color: COLORS.muted, textTransform: "uppercase" }}>{h}</div>)}
                   </div>
                   {ex.sets.map((set, setIdx) => (
                     <div key={setIdx} style={s.setRow(set.done)}>
